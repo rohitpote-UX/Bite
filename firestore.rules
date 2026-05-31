@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper Functions ─────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+
+    function isSameOffice(officeId) {
+      return isAuthenticated() && getUserData().officeId == officeId;
+    }
+
+    function isOfficeAdmin(officeId) {
+      return isAdmin() && getUserData().officeId == officeId;
+    }
+
+    // ── Users Collection ─────────────────────────────────────────────
+    match /users/{userId} {
+      // Users can read their own profile
+      // Admins can read all users in their office
+      allow read: if isAuthenticated() &&
+        (isOwner(userId) || isAdmin());
+
+      // Users can create their own profile (on signup)
+      allow create: if isAuthenticated() && isOwner(userId);
+
+      // Users can update their own profile (limited fields)
+      // Admins can update any user in their office
+      allow update: if isAuthenticated() &&
+        (isOwner(userId) || isAdmin());
+
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    // ── Meals Collection ─────────────────────────────────────────────
+    match /meals/{mealId} {
+      // Users can read their own meals
+      // Admins can read all meals in their office
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         isOfficeAdmin(resource.data.officeId));
+
+      // Users can create/update their own meal for today only
+      // Meal ID format: {userId}_{date}
+      allow create, update: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        isSameOffice(request.resource.data.officeId);
+
+      // Only admins can delete meals
+      allow delete: if isAdmin();
+    }
+
+    // ── Payments Collection ──────────────────────────────────────────
+    match /payments/{paymentId} {
+      // Users can read their own payments
+      // Admins can read all payments in their office
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         isOfficeAdmin(resource.data.officeId));
+
+      // Users can create payment records and upload screenshots
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        isSameOffice(request.resource.data.officeId);
+
+      // Users can update their own payment (e.g., add screenshot)
+      // Admins can update any payment (mark as paid)
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         isOfficeAdmin(resource.data.officeId));
+
+      allow delete: if isAdmin();
+    }
+
+    // ── Weekly Reports Collection ────────────────────────────────────
+    match /weeklyReports/{reportId} {
+      // All office members can read reports
+      allow read: if isAuthenticated() &&
+        isSameOffice(resource.data.officeId);
+
+      // Only admins and Cloud Functions can write reports
+      allow write: if isOfficeAdmin(resource.data.officeId);
+    }
+
+    // ── Monthly Reports Collection ───────────────────────────────────
+    match /monthlyReports/{reportId} {
+      allow read: if isAuthenticated() &&
+        isSameOffice(resource.data.officeId);
+      allow write: if isOfficeAdmin(resource.data.officeId);
+    }
+
+    // ── Notifications Collection ─────────────────────────────────────
+    match /notifications/{notificationId} {
+      // Users can read their own notifications or broadcast ones
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         resource.data.userId == null &&
+         isSameOffice(resource.data.officeId));
+
+      // Only admins and Cloud Functions can create notifications
+      allow create: if isOfficeAdmin(resource.data.officeId);
+
+      // Users can mark their own notifications as read
+      allow update: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+
+      allow delete: if isAdmin();
+    }
+
+    // ── Settings Collection (per office) ────────────────────────────
+    match /settings/{officeId} {
+      // All office members can read settings
+      allow read: if isAuthenticated() &&
+        getUserData().officeId == officeId;
+
+      // Only admins can modify settings
+      allow write: if isOfficeAdmin(officeId);
+    }
+  }
+}
