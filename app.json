@@ -18,7 +18,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "TiffinFlow uses your camera to upload payment screenshots.",
         "NSPhotoLibraryUsageDescription": "TiffinFlow accesses your photo library to upload payment screenshots.",
-        "NSUserNotificationsUsageDescription": "TiffinFlow sends daily meal reminders and payment notifications."
+        "NSUserNotificationsUsageDescription": "TiffinFlow sends daily meal reminders and payment notifications.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,12 +29,13 @@
         "backgroundColor": "#FF6B35"
       },
       "permissions": [
-        "NOTIFICATIONS",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
+        "android.permission.NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -76,8 +78,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    }
+        "projectId": "07c079d1-5aec-4e0e-be06-586355bf5658"
+      },
+      "router": {}
+    },
+    "owner": "rohitpote17s-team"
   }
 }
