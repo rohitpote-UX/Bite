@@ -4,8 +4,9 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import type { User, UserRole, DefaultMealPreference } from '../../types';
+
+const API_BASE_URL = "https://bite-lvdm.onrender.com";
 
 // ── Custom FirebaseUser Interface ─────────────────────────────────────
 export interface FirebaseUser {
@@ -16,13 +17,9 @@ export interface FirebaseUser {
   photoURL?: string | null;
 }
 
-// Helper to determine the dynamic backend URL (handles Android emulator local bridge)
+// Returns the backend API base URL
 export const getBackendUrl = (): string => {
-  const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000/api';
-  if (Platform.OS === 'android' && envUrl.includes('localhost')) {
-    return envUrl.replace('localhost', '10.0.2.2');
-  }
-  return envUrl;
+  return process.env.EXPO_PUBLIC_BACKEND_URL || `${API_BASE_URL}/api`;
 };
 
 // ── Session Management ────────────────────────────────────────────────
